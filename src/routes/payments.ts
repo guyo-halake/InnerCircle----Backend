@@ -51,7 +51,15 @@ router.post('/stk-push', authenticateToken, async (req: any, res) => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    res.json({ message: 'STK Push sent to your phone.', result: response.data });
+    const { CheckoutRequestID } = response.data;
+
+    // Store a pending transaction
+    await pool.query(
+      'INSERT INTO transactions (userId, type, amount, status, mpesaCheckoutId) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'Deposit', amount, 'Pending', CheckoutRequestID]
+    );
+
+    res.json({ message: 'STK Push sent to your phone.', result: response.data, checkoutRequestId: CheckoutRequestID });
   } catch (err: any) {
     logger.error('STK Push failed: ' + err.message);
     res.status(500).json({ error: 'Payment request failed' });
@@ -59,16 +67,56 @@ router.post('/stk-push', authenticateToken, async (req: any, res) => {
 });
 
 // Route: M-Pesa Callback (For real automated balance updating)
-router.post('/callback', async (req, res) => {
-  const callbackData = req.body.Body.stkCallback;
-  if (callbackData.ResultCode === 0) {
-    // Payment Successful
-    const amount = callbackData.CallbackMetadata.Item.find((i: any) => i.Name === 'Amount').Value;
-    const phone = callbackData.CallbackMetadata.Item.find((i: any) => i.Name === 'PhoneNumber').Value;
-    
-    // In a real app, you'd match this phone to a user and update their portfolio balance
-    logger.info(`Payment received: ${amount} from ${phone}`);
+router.post('/callback', async (req: any, res) => {
+  try {
+    const callbackData = req.body.Body.stkCallback;
+    const checkoutRequestId = callbackData.CheckoutRequestID;
+    const resultCode = callbackData.ResultCode;
+
+    if (resultCode === 0) {
+      // Payment Successful
+      const metadataItems = callbackData.CallbackMetadata.Item;
+      const amount = metadataItems.find((i: any) => i.Name === 'Amount').Value;
+      const mpesaReceipt = metadataItems.find((i: any) => i.Name === 'MpesaReceiptNumber').Value;
+      
+      logger.info(`Payment Successful: ${amount} for CheckoutID: ${checkoutRequestId}, Receipt: ${mpesaReceipt}`);
+
+      // 1. Get the userId for this transaction
+      const [transactions] = await pool.query('SELECT * FROM transactions WHERE mpesaCheckoutId = ?', [checkoutRequestId]);
+      const txList = transactions as any[];
+      
+      if (txList.length > 0) {
+        const userId = txList[0].userId;
+
+        // 2. Update Transaction Status
+        await pool.query(
+          'UPDATE transactions SET status = ? WHERE mpesaCheckoutId = ?',
+          ['Completed', checkoutRequestId]
+        );
+
+        // 3. Update Portfolio
+        // We increase both totalInvestment and currentValue
+        await pool.query(
+          'UPDATE portfolios SET totalInvestment = totalInvestment + ?, currentValue = currentValue + ? WHERE userId = ?',
+          [amount, amount, userId]
+        );
+
+        logger.info(`Portfolio updated for user ${userId} with +${amount}`);
+      } else {
+        logger.error(`No transaction found for CheckoutID: ${checkoutRequestId}`);
+      }
+    } else {
+      // Payment Failed
+      logger.warn(`Payment failed or cancelled for CheckoutID: ${checkoutRequestId}. ResultCode: ${resultCode}`);
+      await pool.query(
+        'UPDATE transactions SET status = ? WHERE mpesaCheckoutId = ?',
+        ['Failed', checkoutRequestId]
+      );
+    }
+  } catch (err: any) {
+    logger.error('Error in M-Pesa Callback: ' + err.message);
   }
+  
   res.sendStatus(200);
 });
 

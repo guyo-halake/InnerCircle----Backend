@@ -56,9 +56,31 @@ router.delete('/pools/:id', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// Admin: Get Summary Stats
+router.get('/summary', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const [stats] = await pool.query(`
+      SELECT 
+        (SELECT SUM(currentValue) FROM portfolios) as totalAUM,
+        (SELECT COUNT(*) FROM users) as totalUsers,
+        (SELECT SUM(amount) FROM transactions WHERE type = 'Profit' AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as monthlyProfit
+    `);
+    
+    const data = (stats as any)[0];
+    res.json({
+      totalAUM: data.totalAUM || 0,
+      totalUsers: data.totalUsers || 0,
+      monthlyProfit: data.monthlyProfit || 0
+    });
+  } catch (err: any) {
+    logger.error('Failed to fetch admin summary: ' + err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Admin: Import MT5 Trades and Distribute Profit
 router.post('/import-trades', authenticateToken, isAdmin, async (req, res) => {
-  const { csvData } = req.body; // In a real app we'd use multer but for this prototype string is fine
+  const { csvData } = req.body; 
   
   if (!csvData) return res.status(400).json({ error: 'No data' });
 
@@ -81,20 +103,33 @@ router.post('/import-trades', authenticateToken, isAdmin, async (req, res) => {
     // Proportional Money Distribution
     // 1. Get total AUM
     const [stats] = await pool.query('SELECT SUM(currentValue) as totalAUM FROM portfolios');
-    const totalAUM = (stats as any)[0].totalAUM || 1;
+    const totalAUM = Number((stats as any)[0].totalAUM) || 1;
 
-    // 2. Update each user's portfolio
-    // Formula: new_value = old_value + (totalProfit * (old_value / totalAUM))
-    await pool.query(`
-      UPDATE portfolios 
-      SET 
-        currentValue = currentValue + (? * (currentValue / ?)),
-        netProfit = netProfit + (? * (currentValue / ?)),
-        todayChange = ? * (currentValue / ?)
-      WHERE currentValue > 0
-    `, [totalProfit, totalAUM, totalProfit, totalAUM, totalProfit, totalAUM]);
+    // 2. Get all portfolios with value > 0 to distribute profit
+    const [portfolios] = await pool.query('SELECT userId, currentValue FROM portfolios WHERE currentValue > 0');
+    const portfolioList = portfolios as any[];
 
-    res.json({ message: `Trades synced. Today's profit: ${totalProfit} distributed.` });
+    for (const portfolio of portfolioList) {
+      const userProfit = totalProfit * (Number(portfolio.currentValue) / totalAUM);
+      
+      // Update individual portfolio
+      await pool.query(`
+        UPDATE portfolios 
+        SET 
+          currentValue = currentValue + ?,
+          netProfit = netProfit + ?,
+          todayChange = ?
+        WHERE userId = ?
+      `, [userProfit, userProfit, userProfit, portfolio.userId]);
+
+      // Log transaction
+      await pool.query(
+        'INSERT INTO transactions (userId, type, amount, status) VALUES (?, ?, ?, ?)',
+        [portfolio.userId, 'Profit', userProfit, 'Completed']
+      );
+    }
+
+    res.json({ message: `Trades synced. Today's profit: ${totalProfit} distributed among ${portfolioList.length} investors.` });
   } catch (err: any) {
     logger.error('Failed to import trades: ' + err.message);
     res.status(500).json({ error: 'Import failed' });

@@ -59,6 +59,22 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Transactions
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        type ENUM('Deposit', 'Withdrawal', 'Profit', 'Fee') NOT NULL,
+        amount DECIMAL(18,2) NOT NULL,
+        status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
+        mpesaCheckoutId VARCHAR(255),
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX (userId),
+        INDEX (mpesaCheckoutId)
+      )
+    `);
     
     conn.release();
     console.log('Database initialized successfully.');
