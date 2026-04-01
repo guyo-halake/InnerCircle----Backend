@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { fullName, email, password, phone, country, currency } = req.body;
+  const { fullName, email, password, phone, firstName, lastName, aliasPhoneWhatsApp, aliasPhoneTelegram, role } = req.body;
 
   if (!fullName || !email || !password) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -33,12 +33,17 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query(
-      'INSERT INTO users (fullName, email, password, phone, country, currency) VALUES (?, ?, ?, ?, ?, ?)',
-      [fullName, email, hashedPassword, phone, country, currency]
+      'INSERT INTO users (fullName, firstName, lastName, email, password, phone, aliasPhoneWhatsApp, aliasPhoneTelegram, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [fullName, firstName, lastName, email, hashedPassword, phone, aliasPhoneWhatsApp, aliasPhoneTelegram, role || 'Investor']
     );
 
     const insertResult = result as any;
     const newUserId = insertResult.insertId;
+
+    // Create the three "Pockects" (Wallets) for the investor
+    await pool.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [newUserId, 'POCKET_HOLD', 0]);
+    await pool.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [newUserId, 'POCKET_ALLOCATION', 0]);
+    await pool.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [newUserId, 'POCKET_YIELD', 0]);
 
     // Create a default portfolio for the new user
     await pool.query(
@@ -111,8 +116,12 @@ router.get('/me', authenticateToken, async (req: any, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    // Fetch user wallets (Pockets)
+    const [wallets] = await pool.query('SELECT type, balance FROM wallets WHERE userId = ?', [req.user.id]);
+    
     const { password: _, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    res.json({ ...userWithoutPassword, wallets });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch user data' });

@@ -88,20 +88,42 @@ router.post('/callback', async (req: any, res) => {
       if (txList.length > 0) {
         const userId = txList[0].userId;
 
-        // 2. Update Transaction Status
-        await pool.query(
-          'UPDATE transactions SET status = ? WHERE mpesaCheckoutId = ?',
-          ['Completed', checkoutRequestId]
-        );
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
 
-        // 3. Update Portfolio
-        // We increase both totalInvestment and currentValue
-        await pool.query(
-          'UPDATE portfolios SET totalInvestment = totalInvestment + ?, currentValue = currentValue + ? WHERE userId = ?',
-          [amount, amount, userId]
-        );
+          // 1. Update Transaction Status
+          await connection.query(
+            'UPDATE transactions SET status = ? WHERE mpesaCheckoutId = ?',
+            ['Approved', checkoutRequestId]
+          );
 
-        logger.info(`Portfolio updated for user ${userId} with +${amount}`);
+          // 2. Update Portfolio Summary
+          await connection.query(
+            'UPDATE portfolios SET totalInvestment = totalInvestment + ?, currentValue = currentValue + ? WHERE userId = ?',
+            [amount, amount, userId]
+          );
+
+          // 3. Update Investor's POCKET_HOLD (Uninvested Capital)
+          await connection.query(
+            'UPDATE wallets SET balance = balance + ? WHERE userId = ? AND type = ?',
+            [amount, userId, 'POCKET_HOLD']
+          );
+
+          // 4. Update SYSTEM_AGGREGATE (IC-Wallet - The Mother Wallet)
+          await connection.query(
+            'UPDATE wallets SET balance = balance + ? WHERE type = ?',
+            [amount, 'SYSTEM_AGGREGATE']
+          );
+
+          await connection.commit();
+          logger.info(`Institutional Ledger Updated: User ${userId} (+${amount}) | IC-Wallet sync completed.`);
+        } catch (err: any) {
+          await connection.rollback();
+          logger.error('Transaction rollback in payment callback: ' + err.message);
+        } finally {
+          connection.release();
+        }
       } else {
         logger.error(`No transaction found for CheckoutID: ${checkoutRequestId}`);
       }
@@ -118,6 +140,58 @@ router.post('/callback', async (req: any, res) => {
   }
   
   res.sendStatus(200);
+});
+
+// Route: Get System Financials (Bank Details etc)
+router.get('/financials', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM system_financials WHERE isActive = 1');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch financials' });
+  }
+});
+
+// Route: Request Deposit (Manual methods like Bank, Binance)
+router.post('/deposit-request', authenticateToken, async (req: any, res) => {
+  const { amount, method, methodDetails } = req.body;
+  if (!amount || !method) return res.status(400).json({ error: 'Amount and method required' });
+
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO transactions (userId, type, amount, status, methodDetails) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'Deposit', amount, 'Pending', JSON.stringify(methodDetails)]
+    );
+    res.json({ message: 'Deposit request submitted for approval.', transactionId: (result as any).insertId });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to submit request' });
+  }
+});
+
+// Route: Request Withdrawal
+router.post('/withdrawal-request', authenticateToken, async (req: any, res) => {
+  const { amount, method, methodDetails } = req.body;
+  if (!amount || !method) return res.status(400).json({ error: 'Amount and method required' });
+
+  // Check if user has enough in POCKET_HOLD
+  const [holdResult]: any = await pool.query(
+    'SELECT balance FROM wallets WHERE userId = ? AND type = ?',
+    [req.user.id, 'POCKET_HOLD']
+  );
+
+  if (!holdResult.length || holdResult[0].balance < amount) {
+    return res.status(400).json({ error: 'Insufficient funds in Pocket Hold' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO transactions (userId, type, amount, status, methodDetails) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'Withdrawal', amount, 'Pending', JSON.stringify(methodDetails)]
+    );
+    res.json({ message: 'Withdrawal request submitted for approval.', transactionId: (result as any).insertId });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to submit request' });
+  }
 });
 
 export default router;

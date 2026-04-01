@@ -20,7 +20,55 @@ const initDb = async () => {
   try {
     const conn = await pool.getConnection();
     
-    // Portfolio Pools (Admin defined)
+    // Users with roles and extended KYC
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fullName VARCHAR(255) NOT NULL,
+        firstName VARCHAR(100),
+        lastName VARCHAR(100),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        phone VARCHAR(20),
+        aliasPhoneWhatsApp VARCHAR(20),
+        aliasPhoneTelegram VARCHAR(20),
+        country VARCHAR(100),
+        currency VARCHAR(10) DEFAULT 'KSh',
+        role ENUM('Investor', 'Admin', 'Developer') DEFAULT 'Investor',
+        avatarUrl VARCHAR(255),
+        investmentStrategy TEXT,
+        isVerified TINYINT(1) DEFAULT 0,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Wallets: IC-Wallet (System) and Investor Pockets
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS wallets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT,
+        type ENUM('SYSTEM_AGGREGATE', 'POCKET_HOLD', 'POCKET_ALLOCATION', 'POCKET_YIELD') NOT NULL,
+        balance DECIMAL(18,2) DEFAULT 0.00,
+        currency VARCHAR(10) DEFAULT 'KSh',
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX (userId),
+        INDEX (type)
+      )
+    `);
+
+    // User Payment Preferences
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS user_payment_plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        method ENUM('M-Pesa', 'Bank', 'Card', 'Manual') NOT NULL,
+        isDefault TINYINT(1) DEFAULT 0,
+        details TEXT,
+        INDEX (userId)
+      )
+    `);
+
+    // Portfolio Pools (Admin managed)
     await conn.query(`
       CREATE TABLE IF NOT EXISTS portfolio_pools (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -30,6 +78,7 @@ const initDb = async () => {
         current_yield DECIMAL(10,4) DEFAULT 0.00,
         total_staked DECIMAL(18,2) DEFAULT 0.00,
         risk_level VARCHAR(50) DEFAULT 'Moderate',
+        is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -49,6 +98,33 @@ const initDb = async () => {
       )
     `);
 
+    // Portfolio Summary
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS portfolios (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        totalInvestment DECIMAL(18,2) DEFAULT 0.00,
+        currentValue DECIMAL(18,2) DEFAULT 0.00,
+        netProfit DECIMAL(18,2) DEFAULT 0.00,
+        todayChange DECIMAL(18,2) DEFAULT 0.00,
+        todayChangePercent DECIMAL(5,2) DEFAULT 0.00,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX (userId)
+      )
+    `);
+
+    // Portfolio History for Charting
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS portfolio_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        value DECIMAL(18,2) NOT NULL,
+        recorded_at DATE NOT NULL,
+        INDEX (userId),
+        UNIQUE KEY (userId, recorded_at)
+      )
+    `);
+
     // Trade Proofs (Daily logs and screenshots)
     await conn.query(`
       CREATE TABLE IF NOT EXISTS trade_proofs (
@@ -63,19 +139,37 @@ const initDb = async () => {
       )
     `);
 
-    // Transactions
     await conn.query(`
       CREATE TABLE IF NOT EXISTS transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         userId INT NOT NULL,
-        type ENUM('Deposit', 'Withdrawal', 'Profit', 'Fee') NOT NULL,
+        type ENUM('Deposit', 'Withdrawal', 'Profit', 'Fee', 'Allocation', 'Reinvestment') NOT NULL,
         amount DECIMAL(18,2) NOT NULL,
-        status ENUM('Pending', 'Completed', 'Failed') NOT NULL,
+        status ENUM('Pending', 'Approved', 'Rejected', 'Unsuccessful') DEFAULT 'Pending',
         mpesaCheckoutId VARCHAR(255),
+        methodDetails TEXT,
+        description TEXT,
+        processedBy INT,
+        approvedBy INT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX (userId),
-        INDEX (mpesaCheckoutId)
+        INDEX (status)
+      )
+    `);
+
+    // System Financials (Admin configures these)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS system_financials (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        category ENUM('Bank', 'Mobile', 'Crypto', 'PayPal') NOT NULL,
+        accountName VARCHAR(255),
+        accountNumber VARCHAR(255),
+        paybill VARCHAR(50),
+        logoUrl VARCHAR(255),
+        isActive TINYINT(1) DEFAULT 1,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
 
@@ -138,6 +232,12 @@ const initDb = async () => {
       )
     `);
     
+    // Ensure IC-Wallet exists (SYSTEM_AGGREGATE)
+    const [systemWallet] = await conn.query('SELECT * FROM wallets WHERE type = ?', ['SYSTEM_AGGREGATE']);
+    if ((systemWallet as any[]).length === 0) {
+      await conn.query('INSERT INTO wallets (type, balance, currency) VALUES (?, ?, ?)', ['SYSTEM_AGGREGATE', 0, 'KSh']);
+    }
+
     conn.release();
     console.log('Database initialized successfully.');
   } catch (err) {
