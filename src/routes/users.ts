@@ -81,10 +81,13 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 
+    // Fetch user wallets (Pockets)
+    const [wallets] = await pool.query('SELECT type, balance FROM wallets WHERE userId = ?', [user.id]);
+
     // Exclude password from the user object being returned
     const { password: _, ...userWithoutPassword } = user;
 
-    res.json({ token, user: userWithoutPassword });
+    res.json({ token, user: { ...userWithoutPassword, wallets } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Login failed' });
