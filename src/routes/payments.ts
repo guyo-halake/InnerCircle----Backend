@@ -3,8 +3,18 @@ import axios from 'axios';
 import pool from '../db';
 import authenticateToken from '../middleware/authenticateToken';
 import logger from '../logger';
+import upload from '../middleware/upload';
+import { sendAdminRequestEmail, sendTransactionEmail } from '../services/emailService';
 
 const router = express.Router();
+
+router.post('/upload-proof', authenticateToken, upload.single('proof'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ fileUrl });
+});
 
 const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY || 'your_key';
 const CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET || 'your_secret';
@@ -162,7 +172,34 @@ router.post('/deposit-request', authenticateToken, async (req: any, res) => {
       'INSERT INTO transactions (userId, type, amount, status, methodDetails) VALUES (?, ?, ?, ?, ?)',
       [req.user.id, 'Deposit', amount, 'Pending', JSON.stringify(methodDetails)]
     );
-    res.json({ message: 'Deposit request submitted for approval.', transactionId: (result as any).insertId });
+    
+    const transactionId = (result as any).insertId;
+
+    // Notify Admin via Email
+    const [userRows]: any = await pool.query('SELECT fullName, email FROM users WHERE id = ?', [req.user.id]);
+    if (userRows.length > 0) {
+      const user = userRows[0];
+      
+      // Email Admin
+      sendAdminRequestEmail({
+        transactionId,
+        investorName: user.fullName,
+        type: 'Deposit',
+        amount,
+        methodDetails
+      }).catch(err => logger.error('Failed to send admin email: ' + err.message));
+
+      // Email Investor (Pending status)
+      sendTransactionEmail({
+        to: user.email,
+        investorName: user.fullName,
+        type: 'Deposit',
+        status: 'Pending',
+        amount
+      }).catch(err => logger.error('Failed to send pending email to investor: ' + err.message));
+    }
+
+    res.json({ message: 'Deposit request submitted for approval.', transactionId });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to submit request' });
   }
@@ -188,7 +225,34 @@ router.post('/withdrawal-request', authenticateToken, async (req: any, res) => {
       'INSERT INTO transactions (userId, type, amount, status, methodDetails) VALUES (?, ?, ?, ?, ?)',
       [req.user.id, 'Withdrawal', amount, 'Pending', JSON.stringify(methodDetails)]
     );
-    res.json({ message: 'Withdrawal request submitted for approval.', transactionId: (result as any).insertId });
+    
+    const transactionId = (result as any).insertId;
+
+    // Notify Admin via Email
+    const [userRows]: any = await pool.query('SELECT fullName, email FROM users WHERE id = ?', [req.user.id]);
+    if (userRows.length > 0) {
+      const user = userRows[0];
+
+      // Email Admin
+      sendAdminRequestEmail({
+        transactionId,
+        investorName: user.fullName,
+        type: 'Withdrawal',
+        amount,
+        methodDetails
+      }).catch(err => logger.error('Failed to send admin email: ' + err.message));
+
+      // Email Investor (Pending status)
+      sendTransactionEmail({
+        to: user.email,
+        investorName: user.fullName,
+        type: 'Withdrawal',
+        status: 'Pending',
+        amount
+      }).catch(err => logger.error('Failed to send pending email to investor: ' + err.message));
+    }
+
+    res.json({ message: 'Withdrawal request submitted for approval.', transactionId });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to submit request' });
   }

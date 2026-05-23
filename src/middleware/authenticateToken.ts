@@ -19,7 +19,7 @@ const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextF
 };
 
 export const isAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && (req.user.role === 'Admin' || req.user.role === 'admin')) {
     next();
   } else {
     res.status(403).json({ error: 'Admin privileges required' });

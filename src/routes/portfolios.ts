@@ -62,6 +62,46 @@ router.get('/', authenticateToken, async (req: any, res) => {
   }
 });
 
+router.get('/history', authenticateToken, async (req: any, res) => {
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT value, recorded_at as date FROM portfolio_history WHERE userId = ? ORDER BY recorded_at ASC',
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
+      const [portfolioRows]: any = await pool.query(
+        'SELECT currentValue FROM portfolios WHERE userId = ?',
+        [req.user.id]
+      );
+      const currentValue = portfolioRows.length > 0 ? parseFloat(portfolioRows[0].currentValue) : 0.00;
+
+      const fallbackData = [];
+      const now = new Date();
+      for (let i = 14; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+
+        // Simulate a smooth, compounding growth up to the current value
+        const factor = 1 - (i * 0.004);
+        const val = currentValue * factor;
+
+        fallbackData.push({
+          value: parseFloat(Math.max(0, val).toFixed(2)),
+          date: dateString
+        });
+      }
+      return res.json(fallbackData);
+    }
+
+    res.json(rows);
+  } catch (error) {
+    console.error('History fetch failed:', error);
+    res.status(500).json({ error: 'Failed to fetch portfolio history' });
+  }
+});
+
 router.get('/proofs', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM trade_proofs ORDER BY created_at DESC LIMIT 10');

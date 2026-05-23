@@ -13,6 +13,7 @@ import reportRoutes from './routes/reports';
 import chatRoutes from './routes/chat';
 import logger from './logger';
 import pool from './db';
+import { initPortfolioScheduler } from './services/portfolioScheduler';
 
 dotenv.config();
 
@@ -238,6 +239,56 @@ const initDb = async () => {
       await conn.query('INSERT INTO wallets (type, balance, currency) VALUES (?, ?, ?)', ['SYSTEM_AGGREGATE', 0, 'KSh']);
     }
 
+    // System Settings Table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert default values if they don't exist
+    const defaultSettings = [
+      { key: 'maintenance_mode', value: 'false' },
+      { key: 'disallow_logins', value: 'false' },
+      { key: 'paybill_number', value: '880100' },
+      { key: 'account_number', value: '339025' },
+      { key: 'support_email', value: 'p3lcodes@gmail.com' },
+      { key: 'app_version', value: '1.1.0' },
+      { key: 'primary_theme', value: 'zinc' }
+    ];
+
+    for (const setting of defaultSettings) {
+      const [existing] = await conn.query('SELECT * FROM system_settings WHERE setting_key = ?', [setting.key]);
+      if ((existing as any[]).length === 0) {
+        await conn.query('INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)', [setting.key, setting.value]);
+      }
+    }
+
+    // Check and add managed_pool_id column to users table if missing
+    const [cols]: any = await conn.query("SHOW COLUMNS FROM users LIKE 'managed_pool_id'");
+    if (cols.length === 0) {
+      await conn.query('ALTER TABLE users ADD COLUMN managed_pool_id INT NULL');
+      console.log('Added managed_pool_id column to users table.');
+    }
+
+    // Reset corrupted portfolios to reflect real wallet balances
+    await conn.query(`
+      UPDATE portfolios p
+      JOIN (
+        SELECT userId, SUM(balance) as realVal
+        FROM wallets
+        WHERE type IN ('POCKET_HOLD', 'POCKET_ALLOCATION', 'POCKET_YIELD')
+        GROUP BY userId
+      ) w ON p.userId = w.userId
+      SET p.currentValue = w.realVal,
+          p.netProfit = w.realVal - p.totalInvestment,
+          p.todayChange = 0.00,
+          p.todayChangePercent = 0.00
+    `);
+    console.log('Reset corrupted portfolio balances back to real wallet totals.');
+
     conn.release();
     console.log('Database initialized successfully.');
   } catch (err) {
@@ -245,7 +296,9 @@ const initDb = async () => {
   }
 };
 
-initDb();
+initDb().then(() => {
+  initPortfolioScheduler();
+});
 
 const app = express();
 const server = http.createServer(app);

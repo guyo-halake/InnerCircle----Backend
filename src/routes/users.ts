@@ -79,7 +79,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    // Check if logins are disallowed for investors
+    if (user.role !== 'Admin' && user.role !== 'Developer') {
+      const [settingsRows] = await pool.query('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['disallow_logins']);
+      if ((settingsRows as any[]).length > 0 && (settingsRows as any[])[0].setting_value === 'true') {
+        return res.status(403).json({ error: 'Investor logins are temporarily disabled by the administrator.' });
+      }
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 
     // Fetch user wallets (Pockets)
     const [wallets] = await pool.query('SELECT type, balance FROM wallets WHERE userId = ?', [user.id]);
@@ -178,6 +186,20 @@ router.put('/:id/strategy', authenticateToken, async (req: any, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update strategy' });
+  }
+});
+
+router.get('/settings', async (_req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT setting_key, setting_value FROM system_settings');
+    const settings: Record<string, string> = {};
+    (rows as any[]).forEach(row => {
+      settings[row.setting_key] = row.setting_value;
+    });
+    res.json(settings);
+  } catch (error) {
+    console.error('Failed to fetch settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
 
