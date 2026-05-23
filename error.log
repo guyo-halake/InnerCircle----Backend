@@ -1,0 +1,19 @@
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:39:32.950Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:39:47.856Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:02.854Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:17.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:32.861Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:47.872Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:02.850Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:17.859Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:32.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:47.850Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:42:02.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:42:17.858Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:51:51.348Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:06.420Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:14.189Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:29.216Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:44.211Z"}
+{"level":"error","message":"Failed to send admin email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a640c23a62f3a-bddc5eced0asm144821166b.39 - gsmtp","timestamp":"2026-05-23T07:20:30.729Z"}
+{"level":"error","message":"Failed to send tx email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 4fb4d7f45d1cf-688baf1f0afsm1556723a12.17 - gsmtp","timestamp":"2026-05-23T07:34:28.813Z"}
