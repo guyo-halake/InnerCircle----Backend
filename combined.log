@@ -60,3 +60,63 @@
 {"level":"info","message":"Server is running on port 5002","timestamp":"2026-03-31T13:05:59.405Z"}
 {"level":"info","message":"Server is running on port 5002","timestamp":"2026-03-31T13:45:29.087Z"}
 {"level":"info","message":"Server is running on port 5002","timestamp":"2026-03-31T13:47:58.460Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T12:16:21.144Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T13:06:34.105Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T13:21:04.130Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T13:29:38.716Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T14:10:03.611Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T14:10:21.277Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T14:10:27.224Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T14:10:39.637Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-22T18:31:24.329Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T05:07:37.979Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T05:13:27.325Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T05:37:59.380Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T06:38:44.585Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:39:32.950Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:39:47.856Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:02.854Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:17.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:32.861Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:40:47.872Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:02.850Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:17.859Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:32.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:41:47.850Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:42:02.855Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:42:17.858Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:51:51.348Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:06.420Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:14.189Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:29.216Z"}
+{"level":"error","message":"Failed to fetch team: Table 'innercircle.pools' doesn't exist","timestamp":"2026-05-23T06:52:44.211Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T06:53:02.139Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:05:45.635Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:06:28.126Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:07:51.830Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:18:03.049Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:18:37.083Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:19:06.755Z"}
+{"level":"error","message":"Failed to send admin email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials a640c23a62f3a-bddc5eced0asm144821166b.39 - gsmtp","timestamp":"2026-05-23T07:20:30.729Z"}
+{"level":"error","message":"Failed to send tx email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to\n535 5.7.8  https://support.google.com/mail/?p=BadCredentials 4fb4d7f45d1cf-688baf1f0afsm1556723a12.17 - gsmtp","timestamp":"2026-05-23T07:34:28.813Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T07:59:12.398Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:06:27.587Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:06:33.929Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:06:44.808Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:06:55.558Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:09:56.891Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T08:12:27.743Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:47:46.253Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:48:10.475Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:48:19.091Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:48:35.468Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:49:08.184Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-23T10:49:08.299Z"}
+{"level":"info","message":"No portfolio history entries found for today. Running initial logging...","timestamp":"2026-05-23T10:49:08.304Z"}
+{"level":"info","message":"Running scheduled portfolio valuation logging...","timestamp":"2026-05-23T10:49:08.305Z"}
+{"level":"info","message":"Daily portfolio valuation logging completed successfully.","timestamp":"2026-05-23T10:49:08.311Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 10.18 hours (at 2026-05-23T21:00:05.000Z)","timestamp":"2026-05-23T10:49:08.312Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-23T10:59:08.269Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-23T10:59:08.495Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-23T10:59:08.507Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 10.02 hours (at 2026-05-23T21:00:05.000Z)","timestamp":"2026-05-23T10:59:08.508Z"}
