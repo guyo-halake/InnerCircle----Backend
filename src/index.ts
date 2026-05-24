@@ -288,19 +288,17 @@ const initDb = async () => {
           p.todayChange = 0.00,
           p.todayChangePercent = 0.00
     `);
-    // Automatically seed default users if none exist
-    const [users] = await conn.query('SELECT * FROM users');
-    if ((users as any[]).length === 0) {
+    // Ensure default admin@innercircle.com exists
+    const [existingAdmin] = await conn.query('SELECT * FROM users WHERE email = ?', ['admin@innercircle.com']);
+    let adminId: number;
+    if ((existingAdmin as any[]).length === 0) {
       const adminPassword = await bcrypt.hash('admin123', 10);
-      const investorPassword = await bcrypt.hash('investor123', 10);
-
-      // Seed Admin User
-      const [adminRes] = await conn.query(
+      const [res] = await conn.query(
         `INSERT INTO users (fullName, firstName, lastName, email, password, role, isVerified) 
          VALUES (?, ?, ?, ?, ?, ?, ?);`,
         ['Admin User', 'Admin', 'User', 'admin@innercircle.com', adminPassword, 'Admin', 1]
       );
-      const adminId = (adminRes as any).insertId;
+      adminId = (res as any).insertId;
       await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_HOLD', 0]);
       await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_ALLOCATION', 0]);
       await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_YIELD', 0]);
@@ -309,22 +307,99 @@ const initDb = async () => {
         [adminId, 0, 0, 0, 0, 0]
       );
       console.log('Automatically seeded default Admin user: admin@innercircle.com / admin123');
+    }
 
-      // Seed Investor User
-      const [investorRes] = await conn.query(
+    // Ensure new admin josephwanjohi508@gmail.com exists
+    const [existingWanjohi] = await conn.query('SELECT * FROM users WHERE email = ?', ['josephwanjohi508@gmail.com']);
+    let wanjohiId: number;
+    const wanjohiPasswordHash = await bcrypt.hash('joseph1010', 10);
+    if ((existingWanjohi as any[]).length === 0) {
+      const [res] = await conn.query(
         `INSERT INTO users (fullName, firstName, lastName, email, password, role, isVerified) 
          VALUES (?, ?, ?, ?, ?, ?, ?);`,
-        ['Investor User', 'Investor', 'User', 'investor@innercircle.com', investorPassword, 'Investor', 1]
+        ['Joseph Wanjohi', 'Joseph', 'Wanjohi', 'josephwanjohi508@gmail.com', wanjohiPasswordHash, 'Admin', 1]
       );
-      const investorId = (investorRes as any).insertId;
-      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_HOLD', 50000]);
-      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_ALLOCATION', 35000]);
-      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_YIELD', 1200]);
+      wanjohiId = (res as any).insertId;
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [wanjohiId, 'POCKET_HOLD', 0]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [wanjohiId, 'POCKET_ALLOCATION', 0]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [wanjohiId, 'POCKET_YIELD', 0]);
       await conn.query(
         'INSERT INTO portfolios (userId, totalInvestment, currentValue, netProfit, todayChange, todayChangePercent) VALUES (?, ?, ?, ?, ?, ?)',
-        [investorId, 85000, 86200, 1200, 150, 0.17]
+        [wanjohiId, 0, 0, 0, 0, 0]
       );
-      console.log('Automatically seeded default Investor user: investor@innercircle.com / investor123');
+      console.log('Automatically seeded new Admin user: josephwanjohi508@gmail.com');
+    } else {
+      wanjohiId = (existingWanjohi as any[])[0].id;
+      await conn.query(
+        'UPDATE users SET fullName = ?, password = ?, role = ?, isVerified = 1 WHERE id = ?',
+        ['Joseph Wanjohi', wanjohiPasswordHash, 'Admin', wanjohiId]
+      );
+    }
+
+    // Ensure guyohalakeofficial@gmail.com exists as Investor with proper data
+    const [existingGuyo] = await conn.query('SELECT * FROM users WHERE email = ?', ['guyohalakeofficial@gmail.com']);
+    let guyoId: number;
+    const guyoPasswordHash = await bcrypt.hash('guyesa1010', 10);
+    if ((existingGuyo as any[]).length === 0) {
+      const [res] = await conn.query(
+        `INSERT INTO users (fullName, firstName, lastName, email, password, role, country, isVerified) 
+         VALUES (?, ?, ?, ?, ?, 'Investor', ?, 1);`,
+        ['Guyo Halake', 'Guyo', 'Halake', 'guyohalakeofficial@gmail.com', guyoPasswordHash, 'Kenya']
+      );
+      guyoId = (res as any).insertId;
+      console.log('Automatically seeded Investor user: guyohalakeofficial@gmail.com');
+    } else {
+      guyoId = (existingGuyo as any[])[0].id;
+      await conn.query(
+        'UPDATE users SET fullName = ?, password = ?, role = ?, country = ?, isVerified = 1 WHERE id = ?',
+        ['Guyo Halake', guyoPasswordHash, 'Investor', 'Kenya', guyoId]
+      );
+    }
+
+    // Ensure Guyo Halake has wallets, portfolio and transaction logs
+    const [guyoWallets] = await conn.query('SELECT * FROM wallets WHERE userId = ?', [guyoId]);
+    if ((guyoWallets as any[]).length === 0) {
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [guyoId, 'POCKET_HOLD', 250000.00]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [guyoId, 'POCKET_ALLOCATION', 1000000.00]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [guyoId, 'POCKET_YIELD', 15200.00]);
+      
+      await conn.query(
+        `INSERT INTO portfolios (userId, totalInvestment, currentValue, netProfit, todayChange, todayChangePercent) 
+         VALUES (?, ?, ?, ?, ?, ?);`,
+        [guyoId, 1200000.00, 1265200.00, 65200.00, 480.00, 0.04]
+      );
+
+      const txs = [
+        { type: 'Deposit', amount: 1200000.00, status: 'Approved', desc: 'Capital deposit via Bank wire', date: '2026-05-10 10:00:00' },
+        { type: 'Allocation', amount: 1000000.00, status: 'Approved', desc: 'Asset allocation to Stocks, Forex, and MMF pools', date: '2026-05-11 14:30:00' },
+        { type: 'Profit', amount: 15200.00, status: 'Approved', desc: 'Weekly compounding trading pool yield', date: '2026-05-18 18:00:00' },
+        { type: 'Withdrawal', amount: 50000.00, status: 'Approved', desc: 'Withdrawal to M-Pesa account', date: '2026-05-20 09:15:00' },
+        { type: 'Deposit', amount: 100000.00, status: 'Pending', desc: 'New deposit request via M-Pesa', date: '2026-05-24 11:00:00' }
+      ];
+
+      for (const tx of txs) {
+        await conn.query(
+          `INSERT INTO transactions (userId, type, amount, status, description, createdAt) 
+           VALUES (?, ?, ?, ?, ?, ?);`,
+          [guyoId, tx.type, tx.amount, tx.status, tx.desc, tx.date]
+        );
+      }
+    }
+
+    // Delete any fake test accounts (Emily Davis, Sara Rashid, Joseph Gitari, Razak Guyo, etc.)
+    const emailsToKeep = ['admin@innercircle.com', 'josephwanjohi508@gmail.com', 'guyohalakeofficial@gmail.com'];
+    const [allUsersRows] = await conn.query('SELECT id, email FROM users');
+    const idsToDelete = (allUsersRows as any[])
+      .filter(u => !emailsToKeep.includes(u.email))
+      .map(u => u.id);
+
+    if (idsToDelete.length > 0) {
+      await conn.query('DELETE FROM wallets WHERE userId IN (?)', [idsToDelete]);
+      await conn.query('DELETE FROM portfolios WHERE userId IN (?)', [idsToDelete]);
+      await conn.query('DELETE FROM user_pool_investments WHERE user_id IN (?)', [idsToDelete]);
+      await conn.query('DELETE FROM transactions WHERE userId IN (?)', [idsToDelete]);
+      await conn.query('DELETE FROM users WHERE id IN (?)', [idsToDelete]);
+      console.log('Successfully cleaned up dummy test users.');
     }
 
     // Automatically seed default pools if none exist
