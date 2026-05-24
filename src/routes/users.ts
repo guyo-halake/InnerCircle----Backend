@@ -2,8 +2,8 @@ import { Router } from 'express';
 import pool from '../db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
 import authenticateToken from '../middleware/authenticateToken';
+import { sendWelcomeEmail, sendAdminNewUserEmail } from '../services/emailService';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { fullName, email, password, phone, firstName, lastName, aliasPhoneWhatsApp, aliasPhoneTelegram, role } = req.body;
+  const { fullName, email, password, phone, firstName, lastName, aliasPhoneWhatsApp, aliasPhoneTelegram, role, country } = req.body;
 
   if (!fullName || !email || !password) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -33,8 +33,8 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.query(
-      'INSERT INTO users (fullName, firstName, lastName, email, password, phone, aliasPhoneWhatsApp, aliasPhoneTelegram, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [fullName, firstName, lastName, email, hashedPassword, phone, aliasPhoneWhatsApp, aliasPhoneTelegram, role || 'Investor']
+      'INSERT INTO users (fullName, firstName, lastName, email, password, phone, aliasPhoneWhatsApp, aliasPhoneTelegram, role, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [fullName, firstName, lastName, email, hashedPassword, phone || '', aliasPhoneWhatsApp || '', aliasPhoneTelegram || '', role || 'Investor', country || '']
     );
 
     const insertResult = result as any;
@@ -51,6 +51,14 @@ router.post('/register', async (req, res) => {
       [newUserId, 0, 0, 0, 0, 0]
     );
 
+    // Send Welcome and Admin notification emails asynchronously
+    try {
+      await sendWelcomeEmail(email, fullName);
+      await sendAdminNewUserEmail(fullName, email, phone || 'N/A', country || 'N/A');
+    } catch (emailErr) {
+      console.error('Failed to send registration emails:', emailErr);
+    }
+
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error(error);
@@ -66,7 +74,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ? OR phone = ?', [email, email]);
     const users = rows as any[];
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });

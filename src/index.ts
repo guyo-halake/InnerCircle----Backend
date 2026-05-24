@@ -327,6 +327,23 @@ const initDb = async () => {
       console.log('Automatically seeded default Investor user: investor@innercircle.com / investor123');
     }
 
+    // Automatically seed default pools if none exist
+    const [pools] = await conn.query('SELECT * FROM portfolio_pools');
+    if ((pools as any[]).length === 0) {
+      await conn.query(
+        `INSERT INTO portfolio_pools (name, category, description, current_yield, total_staked, risk_level, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?),
+                (?, ?, ?, ?, ?, ?, ?),
+                (?, ?, ?, ?, ?, ?, ?);`,
+        [
+          'Global Equities Index Pool', 'Stocks', 'Managed diversified equities targeting steady growth with medium-term risk.', 0.1254, 1250000.00, 'Moderate', 1,
+          'Alpha Forex Trading Pool', 'Forex', 'High-frequency algorithmic currency pairs trading optimizing for maximum return yield.', 0.1842, 840000.00, 'High', 1,
+          'Secure Money Market Fund', 'MMF', 'Low-volatility capital preservation pool allocating into high-yield government paper and treasury bills.', 0.0985, 3200000.00, 'Low', 1
+        ]
+      );
+      console.log('Automatically seeded default portfolio pools.');
+    }
+
     conn.release();
     console.log('Database initialized successfully.');
   } catch (err) {
