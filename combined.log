@@ -124,3 +124,15 @@
 {"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-23T11:37:04.049Z"}
 {"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-23T11:37:04.059Z"}
 {"level":"info","message":"Next nightly portfolio sync scheduled in 9.38 hours (at 2026-05-23T21:00:05.000Z)","timestamp":"2026-05-23T11:37:04.060Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-24T06:05:34.056Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-24T06:05:34.148Z"}
+{"level":"info","message":"No portfolio history entries found for today. Running initial logging...","timestamp":"2026-05-24T06:05:34.152Z"}
+{"level":"info","message":"Running scheduled portfolio valuation logging...","timestamp":"2026-05-24T06:05:34.152Z"}
+{"level":"info","message":"Daily portfolio valuation logging completed successfully.","timestamp":"2026-05-24T06:05:34.156Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 14.91 hours (at 2026-05-24T21:00:05.000Z)","timestamp":"2026-05-24T06:05:34.157Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-24T06:36:44.858Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-24T06:36:54.877Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-24T06:38:03.952Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-24T06:38:04.025Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-24T06:38:04.029Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 14.37 hours (at 2026-05-24T21:00:05.000Z)","timestamp":"2026-05-24T06:38:04.029Z"}

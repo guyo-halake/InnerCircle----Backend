@@ -14,6 +14,7 @@ import chatRoutes from './routes/chat';
 import logger from './logger';
 import pool from './db';
 import { initPortfolioScheduler } from './services/portfolioScheduler';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -287,7 +288,44 @@ const initDb = async () => {
           p.todayChange = 0.00,
           p.todayChangePercent = 0.00
     `);
-    console.log('Reset corrupted portfolio balances back to real wallet totals.');
+    // Automatically seed default users if none exist
+    const [users] = await conn.query('SELECT * FROM users');
+    if ((users as any[]).length === 0) {
+      const adminPassword = await bcrypt.hash('admin123', 10);
+      const investorPassword = await bcrypt.hash('investor123', 10);
+
+      // Seed Admin User
+      const [adminRes] = await conn.query(
+        `INSERT INTO users (fullName, firstName, lastName, email, password, role, isVerified) 
+         VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        ['Admin User', 'Admin', 'User', 'admin@innercircle.com', adminPassword, 'Admin', 1]
+      );
+      const adminId = (adminRes as any).insertId;
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_HOLD', 0]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_ALLOCATION', 0]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [adminId, 'POCKET_YIELD', 0]);
+      await conn.query(
+        'INSERT INTO portfolios (userId, totalInvestment, currentValue, netProfit, todayChange, todayChangePercent) VALUES (?, ?, ?, ?, ?, ?)',
+        [adminId, 0, 0, 0, 0, 0]
+      );
+      console.log('Automatically seeded default Admin user: admin@innercircle.com / admin123');
+
+      // Seed Investor User
+      const [investorRes] = await conn.query(
+        `INSERT INTO users (fullName, firstName, lastName, email, password, role, isVerified) 
+         VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        ['Investor User', 'Investor', 'User', 'investor@innercircle.com', investorPassword, 'Investor', 1]
+      );
+      const investorId = (investorRes as any).insertId;
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_HOLD', 50000]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_ALLOCATION', 35000]);
+      await conn.query('INSERT INTO wallets (userId, type, balance) VALUES (?, ?, ?)', [investorId, 'POCKET_YIELD', 1200]);
+      await conn.query(
+        'INSERT INTO portfolios (userId, totalInvestment, currentValue, netProfit, todayChange, todayChangePercent) VALUES (?, ?, ?, ?, ?, ?)',
+        [investorId, 85000, 86200, 1200, 150, 0.17]
+      );
+      console.log('Automatically seeded default Investor user: investor@innercircle.com / investor123');
+    }
 
     conn.release();
     console.log('Database initialized successfully.');
@@ -311,12 +349,24 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests from web app, mobile app (null origin), and configured origin
-    const allowed = [process.env.CORS_ORIGIN || 'http://localhost:3000', 'http://localhost:8081', 'http://localhost:19006'];
-    if (!origin || allowed.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const allowed = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:8081',
+      'http://localhost:19006'
+    ].filter(Boolean) as string[];
+
+    const isVercelPreview = origin.endsWith('.vercel.app');
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+
+    if (allowed.includes(origin) || isVercelPreview || isLocalhost) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow all in dev
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
