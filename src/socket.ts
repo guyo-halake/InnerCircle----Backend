@@ -5,10 +5,23 @@ import pool from './db';
 let ioInstance: Server;
 
 export const initSocket = (server: http.Server) => {
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:8081',
+    'http://localhost:19006'
+  ];
+  
+  if (process.env.CORS_ORIGIN) {
+    allowedOrigins.push(process.env.CORS_ORIGIN);
+  } else {
+    allowedOrigins.push('https://innercircleinvestors.vercel.app');
+  }
+
   const io = new Server(server, {
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:8081', 'http://localhost:19006'],
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
+      credentials: true
     },
   });
 
