@@ -311,12 +311,24 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests from web app, mobile app (null origin), and configured origin
-    const allowed = [process.env.CORS_ORIGIN || 'http://localhost:3000', 'http://localhost:8081', 'http://localhost:19006'];
-    if (!origin || allowed.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const allowed = [
+      process.env.CORS_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:8081',
+      'http://localhost:19006'
+    ].filter(Boolean) as string[];
+
+    const isVercelPreview = origin.endsWith('.vercel.app');
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+
+    if (allowed.includes(origin) || isVercelPreview || isLocalhost) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow all in dev
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true

@@ -5,21 +5,29 @@ import pool from './db';
 let ioInstance: Server;
 
 export const initSocket = (server: http.Server) => {
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:8081',
-    'http://localhost:19006'
-  ];
-  
-  if (process.env.CORS_ORIGIN) {
-    allowedOrigins.push(process.env.CORS_ORIGIN);
-  } else {
-    allowedOrigins.push('https://innercircleinvestors.vercel.app');
-  }
-
   const io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        const allowed = [
+          process.env.CORS_ORIGIN,
+          'http://localhost:3000',
+          'http://localhost:8081',
+          'http://localhost:19006'
+        ].filter(Boolean) as string[];
+
+        const isVercelPreview = origin.endsWith('.vercel.app');
+        const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+
+        if (allowed.includes(origin) || isVercelPreview || isLocalhost) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true
     },
