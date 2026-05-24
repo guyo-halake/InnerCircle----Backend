@@ -263,3 +263,132 @@ export async function sendCustomEmail(opts: { to: string; subject: string; body:
     `,
   });
 }
+
+export async function sendWelcomeEmail(to: string, investorName: string): Promise<void> {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body style="margin:0;padding:0;background:#f5efe6;font-family:'Inter',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe6;padding:40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="560" cellpadding="0" cellspacing="0" style="background:#fdf9f4;border-radius:16px;overflow:hidden;max-width:560px;width:100%;">
+              <!-- Header -->
+              <tr>
+                <td style="background:#1a1a1a;padding:28px 32px;">
+                  <p style="margin:0;font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;">InnerCircle Hedgefund</p>
+                  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:#ffffff;">Welcome to InnerCircle</h1>
+                </td>
+              </tr>
+              <!-- Body -->
+              <tr>
+                <td style="padding:32px;">
+                  <p style="margin:0 0 8px;font-size:14px;color:#555;">Hello <strong style="color:#1a1a1a;">${investorName}</strong>,</p>
+                  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+                    Welcome to **InnerCircle**, an exclusive private investment portal designed to provide institutional performance with complete transparency.
+                  </p>
+                  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+                    Your account has been registered successfully. You can now login to your personal dashboard to make your first capital allocation and monitor pool yields in real-time.
+                  </p>
+                  <div style="margin-top:28px;">
+                    <a href="https://innercircleinvestors.vercel.app/login" style="display:inline-block;padding:14px 28px;background:#1a1a1a;color:#ffffff;text-align:center;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;">Access Your Dashboard</a>
+                  </div>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding:20px 32px;border-top:1px solid #ede8e0;">
+                  <p style="margin:0;font-size:11px;color:#aaa;line-height:1.8;">
+                    This is an automated welcome message from InnerCircle Hedgefund.<br/>
+                    Please do not reply to this email.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"InnerCircle Hedgefund" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: "Welcome to InnerCircle",
+    html,
+  });
+}
+
+export async function sendAdminNewUserEmail(
+  investorName: string,
+  investorEmail: string,
+  investorPhone: string,
+  investorCountry: string
+): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.warn('ADMIN_EMAIL not set, skipping admin user notification');
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body style="margin:0;padding:0;background:#f5efe6;font-family:'Inter',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe6;padding:40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="560" cellpadding="0" cellspacing="0" style="background:#fdf9f4;border-radius:16px;overflow:hidden;max-width:560px;width:100%;">
+              <!-- Header -->
+              <tr>
+                <td style="background:#1a1a1a;padding:28px 32px;">
+                  <p style="margin:0;font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;">Admin Notification</p>
+                  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:#ffffff;">New Investor Registered</h1>
+                </td>
+              </tr>
+              <!-- Body -->
+              <tr>
+                <td style="padding:32px;">
+                  <p style="margin:0 0 8px;font-size:14px;color:#555;">Hey <strong style="color:#1a1a1a;">Admin</strong>,</p>
+                  <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+                    A new investor has created an account on the platform:
+                  </p>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe6;border-radius:12px;margin-bottom:28px;">
+                    <tr>
+                      <td style="padding:20px 24px; font-size:13px; line-height:1.8; color:#333;">
+                        <p style="margin:0;"><strong>Full Name:</strong> ${investorName}</p>
+                        <p style="margin:0;"><strong>Email:</strong> ${investorEmail}</p>
+                        <p style="margin:0;"><strong>Phone:</strong> ${investorPhone}</p>
+                        <p style="margin:0;"><strong>Country:</strong> ${investorCountry}</p>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="margin-top:20px;">
+                    <a href="https://innercircleinvestors.vercel.app/admin" style="display:inline-block;padding:14px 28px;background:#1a1a1a;color:#ffffff;text-align:center;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;">Open Admin Panel</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"InnerCircle System" <${process.env.EMAIL_USER}>`,
+    to: adminEmail,
+    subject: `New Investor Account Created: ${investorName}`,
+    html,
+  });
+}
