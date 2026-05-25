@@ -156,3 +156,23 @@
 {"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T08:51:10.712Z"}
 {"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T08:51:10.714Z"}
 {"level":"info","message":"Next nightly portfolio sync scheduled in 12.15 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T08:51:10.714Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-25T09:02:11.185Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T09:02:11.434Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T09:02:11.436Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 11.96 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T09:02:11.436Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-25T09:15:50.664Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T09:15:50.956Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T09:15:50.961Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 11.74 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T09:15:50.961Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-25T09:16:21.378Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T09:16:21.643Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T09:16:21.645Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 11.73 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T09:16:21.646Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-25T09:16:49.196Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T09:16:49.453Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T09:16:49.455Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 11.72 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T09:16:49.456Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2026-05-25T09:17:05.291Z"}
+{"level":"info","message":"Initializing portfolio scheduler...","timestamp":"2026-05-25T09:17:05.563Z"}
+{"level":"info","message":"Today's portfolio history entries already exist.","timestamp":"2026-05-25T09:17:05.564Z"}
+{"level":"info","message":"Next nightly portfolio sync scheduled in 11.72 hours (at 2026-05-25T21:00:05.000Z)","timestamp":"2026-05-25T09:17:05.565Z"}

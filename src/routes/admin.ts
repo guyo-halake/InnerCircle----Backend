@@ -745,5 +745,135 @@ router.post('/users', authenticateToken, isAdmin, async (req: any, res) => {
     res.status(500).json({ error: 'Failed to create user' });
   }
 });
+// Admin: Emergency Kill Switch for Transactions
+router.post('/freeze-system', authenticateToken, isAdmin, async (req, res) => {
+  const { freeze } = req.body;
+  try {
+    await pool.query(
+      'INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+      ['transactions_frozen', String(freeze), String(freeze)]
+    );
+    
+    const io = getIo();
+    if (io) {
+      io.emit('systemSettingsUpdate', { transactions_frozen: String(freeze) });
+    }
+    
+    // Log to Python SRE
+    fetch('http://127.0.0.1:8000/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: freeze ? 'CRITICAL' : 'INFO',
+        message: `System Transactions ${freeze ? 'FROZEN' : 'UNFROZEN'} by Admin`,
+        source: 'node-backend'
+      })
+    }).catch(() => {});
+
+    res.json({ message: `System transactions ${freeze ? 'frozen' : 'unfrozen'}` });
+  } catch (err: any) {
+    logger.error('Failed to toggle freeze: ' + err.message);
+    res.status(500).json({ error: 'Failed to toggle freeze' });
+  }
+});
+
+// Admin: Get system metrics (Live connections)
+router.get('/metrics', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const io = getIo();
+    const activeConnections = io ? io.engine.clientsCount : 0;
+    
+    // Check if transactions are frozen
+    const [settings]: any = await pool.query("SELECT setting_value FROM system_settings WHERE setting_key = 'transactions_frozen'");
+    const transactionsFrozen = settings.length > 0 && settings[0].setting_value === 'true';
+
+    res.json({
+      activeConnections,
+      transactionsFrozen
+    });
+  } catch (err: any) {
+    logger.error('Failed to fetch metrics: ' + err.message);
+    res.status(500).json({ error: 'Failed to fetch metrics' });
+  }
+});
 
 export default router;
+
+// Admin: Get all users
+router.get('/users', authenticateToken, isAdmin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, fullName, email, phone, role, country, isVerified, createdAt 
+      FROM users 
+      ORDER BY createdAt DESC
+    `);
+    res.json(rows);
+  } catch (err: any) {
+    logger.error('Failed to fetch all users: ' + err.message);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Admin: Update any user
+router.put('/users/:id', authenticateToken, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { fullName, email, phone, role } = req.body;
+  
+  if (!fullName || !email || !role) {
+    return res.status(400).json({ error: 'Full name, email, and role are required' });
+  }
+
+  try {
+    await pool.query(
+      'UPDATE users SET fullName = ?, email = ?, phone = ?, role = ? WHERE id = ?',
+      [fullName, email, phone || null, role, id]
+    );
+    res.json({ message: 'User updated successfully' });
+  } catch (err: any) {
+    logger.error('Failed to update user: ' + err.message);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Admin: Force Change User Password
+router.put('/users/:id/password', authenticateToken, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+    res.json({ message: 'Password changed successfully' });
+  } catch (err: any) {
+    logger.error('Failed to change user password: ' + err.message);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// Admin: Delete any user
+router.delete('/users/:id', authenticateToken, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    await connection.query('DELETE FROM wallets WHERE userId = ?', [id]);
+    await connection.query('DELETE FROM portfolios WHERE userId = ?', [id]);
+    await connection.query('DELETE FROM user_pool_investments WHERE user_id = ?', [id]);
+    await connection.query('DELETE FROM transactions WHERE userId = ?', [id]);
+    await connection.query('DELETE FROM users WHERE id = ?', [id]);
+
+    await connection.commit();
+    connection.release();
+
+    res.json({ message: 'User deleted successfully.' });
+  } catch (err: any) {
+    logger.error('Failed to delete user: ' + err.message);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+

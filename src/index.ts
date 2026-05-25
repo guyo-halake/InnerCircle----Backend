@@ -476,6 +476,34 @@ app.use('/api/trades', tradeRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/chat', chatRoutes);
 
+// Global Error Handler & Forwarder to Python SRE Command Center
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error(err.stack || err.message);
+  
+  fetch('http://127.0.0.1:8000/logs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      level: 'ERROR',
+      message: `[${req.method} ${req.url}] ` + (err.message || err),
+      source: 'node-backend'
+    })
+  }).catch(() => {}); // ignore if Python SRE is down
+  
+  // Also trigger a critical email alert
+  fetch('http://127.0.0.1:8000/alerts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      subject: `Backend Crash on ${req.method} ${req.url}`,
+      message: err.stack || err.message,
+      critical: true
+    })
+  }).catch(() => {});
+  
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
 app.get('/', (req, res) => {
   res.send('InnerCircle Backend is running!');
 });

@@ -50,6 +50,11 @@ router.post('/stk-push', authenticateToken, async (req: any, res) => {
   const { amount, phoneNumber } = req.body;
   if (!amount || !phoneNumber) return res.status(400).json({ error: 'Amount and phone required' });
 
+  const [settings]: any = await pool.query("SELECT setting_value FROM system_settings WHERE setting_key = 'transactions_frozen'");
+  if (settings.length > 0 && settings[0].setting_value === 'true') {
+    return res.status(403).json({ error: 'System transactions are currently frozen for security reasons.' });
+  }
+
   try {
     const token = await getAccessToken();
     const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
@@ -177,6 +182,11 @@ router.post('/deposit-request', authenticateToken, async (req: any, res) => {
   const { amount, method, methodDetails } = req.body;
   if (!amount || !method) return res.status(400).json({ error: 'Amount and method required' });
 
+  const [settings]: any = await pool.query("SELECT setting_value FROM system_settings WHERE setting_key = 'transactions_frozen'");
+  if (settings.length > 0 && settings[0].setting_value === 'true') {
+    return res.status(403).json({ error: 'System transactions are currently frozen for security reasons.' });
+  }
+
   try {
     const [result] = await pool.query(
       'INSERT INTO transactions (userId, type, amount, status, methodDetails) VALUES (?, ?, ?, ?, ?)',
@@ -231,6 +241,11 @@ router.post('/deposit-request', authenticateToken, async (req: any, res) => {
 router.post('/withdrawal-request', authenticateToken, async (req: any, res) => {
   const { amount, method, methodDetails } = req.body;
   if (!amount || !method) return res.status(400).json({ error: 'Amount and method required' });
+
+  const [settings]: any = await pool.query("SELECT setting_value FROM system_settings WHERE setting_key = 'transactions_frozen'");
+  if (settings.length > 0 && settings[0].setting_value === 'true') {
+    return res.status(403).json({ error: 'System transactions are currently frozen for security reasons.' });
+  }
 
   // Check if user has enough in POCKET_HOLD
   const [holdResult]: any = await pool.query(
