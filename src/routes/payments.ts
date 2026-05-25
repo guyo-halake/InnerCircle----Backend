@@ -8,6 +8,16 @@ import { sendAdminRequestEmail, sendTransactionEmail } from '../services/emailSe
 
 const router = express.Router();
 
+router.get('/transactions', authenticateToken, async (req: any, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM transactions WHERE userId = ? ORDER BY createdAt DESC LIMIT 20', [req.user.id]);
+    res.json(rows);
+  } catch (error: any) {
+    logger.error('Failed to fetch transactions: ' + error.message);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
 router.post('/upload-proof', authenticateToken, upload.single('proof'), (req: any, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -181,22 +191,34 @@ router.post('/deposit-request', authenticateToken, async (req: any, res) => {
       const user = userRows[0];
       
       // Email Admin
-      sendAdminRequestEmail({
-        transactionId,
-        investorName: user.fullName,
-        type: 'Deposit',
-        amount,
-        methodDetails
-      }).catch(err => logger.error('Failed to send admin email: ' + err.message));
+      try {
+        console.log(`[EMAIL DISPATCH] Sending Admin Notification for Deposit to ${process.env.ADMIN_EMAIL}...`);
+        await sendAdminRequestEmail({
+          transactionId,
+          investorName: user.fullName,
+          type: 'Deposit',
+          amount,
+          methodDetails
+        });
+        console.log(`[SUCCESS] Admin received the deposit request email.`);
+      } catch (err: any) {
+        console.error(`[ERROR] Admin deposit email failed:`, err.message);
+      }
 
       // Email Investor (Pending status)
-      sendTransactionEmail({
-        to: user.email,
-        investorName: user.fullName,
-        type: 'Deposit',
-        status: 'Pending',
-        amount
-      }).catch(err => logger.error('Failed to send pending email to investor: ' + err.message));
+      try {
+        console.log(`[EMAIL DISPATCH] Sending Investor Pending Deposit Notification to ${user.email}...`);
+        await sendTransactionEmail({
+          to: user.email,
+          investorName: user.fullName,
+          type: 'Deposit',
+          status: 'Pending',
+          amount
+        });
+        console.log(`[SUCCESS] Investor received the pending deposit email.`);
+      } catch (err: any) {
+        console.error(`[ERROR] Investor pending deposit email failed:`, err.message);
+      }
     }
 
     res.json({ message: 'Deposit request submitted for approval.', transactionId });
@@ -234,22 +256,34 @@ router.post('/withdrawal-request', authenticateToken, async (req: any, res) => {
       const user = userRows[0];
 
       // Email Admin
-      sendAdminRequestEmail({
-        transactionId,
-        investorName: user.fullName,
-        type: 'Withdrawal',
-        amount,
-        methodDetails
-      }).catch(err => logger.error('Failed to send admin email: ' + err.message));
+      try {
+        console.log(`[EMAIL DISPATCH] Sending Admin Notification for Withdrawal to ${process.env.ADMIN_EMAIL}...`);
+        await sendAdminRequestEmail({
+          transactionId,
+          investorName: user.fullName,
+          type: 'Withdrawal',
+          amount,
+          methodDetails
+        });
+        console.log(`[SUCCESS] Admin received the withdrawal request email.`);
+      } catch (err: any) {
+        console.error(`[ERROR] Admin withdrawal email failed:`, err.message);
+      }
 
       // Email Investor (Pending status)
-      sendTransactionEmail({
-        to: user.email,
-        investorName: user.fullName,
-        type: 'Withdrawal',
-        status: 'Pending',
-        amount
-      }).catch(err => logger.error('Failed to send pending email to investor: ' + err.message));
+      try {
+        console.log(`[EMAIL DISPATCH] Sending Investor Pending Withdrawal Notification to ${user.email}...`);
+        await sendTransactionEmail({
+          to: user.email,
+          investorName: user.fullName,
+          type: 'Withdrawal',
+          status: 'Pending',
+          amount
+        });
+        console.log(`[SUCCESS] Investor received the pending withdrawal email.`);
+      } catch (err: any) {
+        console.error(`[ERROR] Investor pending withdrawal email failed:`, err.message);
+      }
     }
 
     res.json({ message: 'Withdrawal request submitted for approval.', transactionId });
